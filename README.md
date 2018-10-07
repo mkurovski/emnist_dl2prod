@@ -22,7 +22,7 @@ Part 1:
 
 Part 2:
 
-will be publiched on September 18th 
+will be published about mid-October
 
 The code has been tested with Docker `Version 18.06.1-ce-mac73 (26764)`
 
