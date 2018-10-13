@@ -5,6 +5,7 @@ __author__ = "Marcel Kurovski"
 __copyright__ = "Marcel Kurovski"
 __license__ = "mit"
 
+import json
 import logging
 import os
 import requests
@@ -140,10 +141,10 @@ def show_img(idx, x_train, y_train, x_test, y_test, mapping, mode='train'):
     """
     if mode == 'train':
         img = x_train[idx]
-        label = chr(mapping[y_train[idx], 1])
+        label = mapping[y_train[idx, 0]]
     else:
         img = x_test[idx]
-        label = chr(mapping[y_test[idx], 1])
+        label = mapping[y_test[idx, 0]]
     plt.figure()
     plt.gray()
     plt.imshow(img)
@@ -157,6 +158,51 @@ def show_train_progress(iteration, train_loss, test_loss, train_acc, test_acc):
            "Accuracy: {:.3%} / {:.3%}").format(iteration,
                                                train_loss, test_loss,
                                                train_acc, test_acc))
+
+
+def eval_serving_accuracy(n_examples, n_print_examples, request_url,
+                          dataset='test'):
+    """
+
+
+    Args:
+        n_examples (int): number of examples to pick and evaluate
+        n_print_examples (int): number of examples to print img and classification
+        request_url (str):
+        dataset (str): `train` or `test` data to pick evaluation examples from
+    """
+    x_train, y_train, x_test, y_test, _ = load_emnist('emnist_data/')
+    mapping = get_emnist_mapping()
+
+    acc = 0
+
+    if dataset == 'train':
+        x_eval, y_eval = x_train, y_train
+    else:
+        x_eval, y_eval = x_test, y_test
+
+    eval_img_indices = np.random.choice(np.arange(x_eval.shape[0]),
+                                        n_examples,
+                                        replace=False)
+
+    for idx, test_img_idx in enumerate(eval_img_indices):
+        test_img_flatten = x_eval[test_img_idx].reshape(1, 784) / 255
+        test_img_payload = {"instances": test_img_flatten.tolist()}
+        test_img_softmax_pred = requests.post(
+                request_url, data=json.dumps(test_img_payload)
+        )
+        test_img_class_pred = np.argmax(
+                test_img_softmax_pred.json()['predictions'])
+        acc += (test_img_class_pred == y_eval[test_img_idx][0])
+
+        # print the first 10 images with their true and predicted label
+        if idx < n_print_examples:
+            show_img(test_img_idx, x_train, y_train, x_test, y_test, mapping,
+                     mode=dataset)
+            print("Predicted Label: {}".format(mapping[test_img_class_pred]))
+
+    print("Implementation Accuracy on {} test images: {:.2%}".format(
+          n_examples, acc / n_examples))
 
 
 def get_emnist_mapping():
