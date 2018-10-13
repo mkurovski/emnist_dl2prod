@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+
+    <title>EMNIST Image Upload</title>
+
+  </head>
+
+   <body>
+     <h1 style="text-align:center">Upload 28x28 Grayscale PNG Image for Classification</h1>
+      <form action = "{{ eurl_for('show_emnist_result') }}" method = "POST"
+         enctype = "multipart/form-data" style="text-align:center">
+         <input type = "file" name = "image" />
+         <br>
+         <br>
+         <input type = "submit" value = "Get Result"/ style="font-size:300%;text-align:center">
+      </form>
+
+   </body>
+</html>
