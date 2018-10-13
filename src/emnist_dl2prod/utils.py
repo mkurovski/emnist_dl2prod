@@ -171,6 +171,7 @@ def eval_serving_accuracy(n_examples, n_print_examples, request_url, seed=42,
         n_examples (int): number of examples to pick and evaluate
         n_print_examples (int): number of examples to print img and classification
         request_url (str): URL of model service used for classification
+        seed (int): seed for NumPy random number generator
         dataset (str): `train` or `test` data to pick evaluation examples from
         use_graphpipe (bool): use graphpipe client to execute queries (uses
                                 flatbuffers instead)
@@ -189,7 +190,7 @@ def eval_serving_accuracy(n_examples, n_print_examples, request_url, seed=42,
     else:
         x_eval, y_eval = x_test, y_test
 
-    np.random.seed(42)
+    np.random.seed(seed)
     eval_img_indices = np.random.choice(np.arange(x_eval.shape[0]),
                                         n_examples,
                                         replace=False)

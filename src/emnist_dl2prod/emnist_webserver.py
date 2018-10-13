@@ -14,7 +14,6 @@ __license__ = "mit"
 import json
 import logging
 import os
-import pdb
 from pkg_resources import resource_filename
 import shutil
 import time
@@ -120,7 +119,6 @@ def emnist_service():
     return response
 
 
-
 def show_emnist_success(emnist_result):
     """
     Handles a successful image detection
@@ -175,6 +173,7 @@ def classify_img(img_prep):
 def main():
     app.run(host="0.0.0.0", port=5000, debug=False)
     shutil.rmtree(TEMP_MEDIA_FOLDER)
+
 
 if __name__ == '__main__':
     main()
