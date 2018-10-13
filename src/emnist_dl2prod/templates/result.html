@@ -11,6 +11,11 @@
 
     <h1 style="text-align:center">EMNIST Result</h1>
 
+    <form action = "{{ url_for('upload_file') }}"
+          style="text-align:center">
+       <input type="submit" value="New Request" />
+    </form>
+
     <div align=center>
         <img src="{{ img_filename }}" alt="EMNIST Digit or Character"
              style="border:2px solid red; width: 112px; height: 112px;">
@@ -18,6 +23,7 @@
 
     <p align=center>Detected Class:</p>
     <p style="text-align:center;font-size:80px;color:darkblue">{{ predicted_class }}</p>
+    <p align=center>Softmax Activations:</p>
     {% for key, value in softmax_scores.items() %}
         {% if key == predicted_class %}
             <p align=center><b>{{  key  }}: {{ value }}</b></p>
@@ -27,11 +33,6 @@
     {% endfor %}
     <br>
     <br>
-
-    <form action = "{{ url_for('upload_file') }}"
-          style="text-align:center">
-       <input type="submit" value="New Request" />
-    </form>
 
    </body>
 </html>

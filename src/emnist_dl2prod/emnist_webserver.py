@@ -11,6 +11,7 @@ __author__ = "Marcel Kurovski"
 __copyright__ = "Marcel Kurovski"
 __license__ = "mit"
 
+import json
 import logging
 import os
 import pdb
@@ -66,9 +67,10 @@ def show_emnist_result():
     timestamp = int(time.time()*1000)
     emnist_result['timestamp'] = timestamp
 
-    # TODO: Check whether this works also without saving the image
+    # In order to display the uploaded image on the results' page,
+    # we have to temporarily store it
+    # No secure_filename required as we create a new filename
     img_file = request.files['image']
-    pdb.set_trace()
     img_filename = 'img_upload_' + str(timestamp) + '.png'
     img_filepath = os.path.join(app.config['UPLOAD_FOLDER'], img_filename)
     img_file.save(img_filepath)
@@ -93,6 +95,30 @@ def show_emnist_result():
 def get_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename,
                                as_attachment=True)
+
+
+@app.route('/', methods=['POST'])
+def emnist_service():
+    """
+    EMNIST Detection Webservice without rendering any HTML pages
+
+    Returns:
+        response (`obj:flask.wrappers.Response`): Response object that contains
+            the softmax distribution in JSON
+    """
+
+    img_prep = json.loads(request.data)['instances']
+    softmax_scores = dnn_classifier_tf.run(img_prep).tolist()
+    result = {'predictions': softmax_scores}
+
+    response = app.response_class(
+            response=json.dumps(result),
+            status=200,
+            mimetype='application/json'
+    )
+
+    return response
+
 
 
 def show_emnist_success(emnist_result):
@@ -130,13 +156,16 @@ def preprocess_img(img_raw):
 def classify_img(img_prep):
     """
     Performs image classification
+    Args:
+        img_prep (:obj:`np.array`): (1, width*height) flattened image with
+                                    pixel values normalized to [0, 1]
 
     Returns:
         softmax_scores (:obj:`np.array`): (62,) array with softmax activations
             for all classes
         class_prediction (str): class with highest activation
     """
-    softmax_scores = dnn_classifier.run(img_prep)[0]
+    softmax_scores = dnn_classifier_tf.run(img_prep)[0]
     class_prediction_idx = np.argmax(softmax_scores)
     class_prediction = emnist_mapping[class_prediction_idx]
 
@@ -145,7 +174,6 @@ def classify_img(img_prep):
 
 def main():
     app.run(host="0.0.0.0", port=5000, debug=False)
-    pdb.set_trace()
     shutil.rmtree(TEMP_MEDIA_FOLDER)
 
 if __name__ == '__main__':

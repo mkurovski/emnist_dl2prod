@@ -11,10 +11,12 @@ import os
 import requests
 import shutil
 import sys
+import time
 import zipfile
 
 import matplotlib.pyplot as plt
 
+from graphpipe import remote
 import numpy as np
 from scipy.io import loadmat
 
@@ -116,7 +118,6 @@ def download_emnist(emnist_folder_path):
     with zipfile.ZipFile(emnist_matlab_zip_filepath, 'r') as zip_ref:
         zip_ref.extractall(emnist_folder_path)
 
-    # move
     matlab_folder_path = os.path.join(emnist_folder_path, 'matlab')
     for matlab_file in os.listdir(matlab_folder_path):
         shutil.move(os.path.join(matlab_folder_path, matlab_file),
@@ -160,39 +161,55 @@ def show_train_progress(iteration, train_loss, test_loss, train_acc, test_acc):
                                                train_acc, test_acc))
 
 
-def eval_serving_accuracy(n_examples, n_print_examples, request_url,
-                          dataset='test'):
+def eval_serving_accuracy(n_examples, n_print_examples, request_url, seed=42,
+                          dataset='test', use_graphpipe=False):
     """
-
+    Fires queries against a model service, evaluates the result in terms
+    of classification accuracy and processing time, and prints examples
 
     Args:
         n_examples (int): number of examples to pick and evaluate
         n_print_examples (int): number of examples to print img and classification
-        request_url (str):
+        request_url (str): URL of model service used for classification
         dataset (str): `train` or `test` data to pick evaluation examples from
+        use_graphpipe (bool): use graphpipe client to execute queries (uses
+                                flatbuffers instead)
+
+    Returns:
+        durations ([int]): list of ms every request took
     """
     x_train, y_train, x_test, y_test, _ = load_emnist('emnist_data/')
     mapping = get_emnist_mapping()
 
     acc = 0
+    durations = []
 
     if dataset == 'train':
         x_eval, y_eval = x_train, y_train
     else:
         x_eval, y_eval = x_test, y_test
 
+    np.random.seed(42)
     eval_img_indices = np.random.choice(np.arange(x_eval.shape[0]),
                                         n_examples,
                                         replace=False)
 
     for idx, test_img_idx in enumerate(eval_img_indices):
         test_img_flatten = x_eval[test_img_idx].reshape(1, 784) / 255
-        test_img_payload = {"instances": test_img_flatten.tolist()}
-        test_img_softmax_pred = requests.post(
-                request_url, data=json.dumps(test_img_payload)
-        )
-        test_img_class_pred = np.argmax(
-                test_img_softmax_pred.json()['predictions'])
+
+        if not use_graphpipe:
+            start = time.time()
+            test_img_payload = {"instances": test_img_flatten.tolist()}
+            test_img_payload = json.dumps(test_img_payload)
+            test_img_softmax_pred = requests.post(request_url,
+                                                  data=test_img_payload)
+            test_img_softmax_pred = test_img_softmax_pred.json()['predictions']
+        else:
+            start = time.time()
+            test_img_softmax_pred = remote.execute(request_url, test_img_flatten)
+
+        durations.append(int((time.time() - start) * 1000000)/1000)
+        test_img_class_pred = np.argmax(test_img_softmax_pred)
         acc += (test_img_class_pred == y_eval[test_img_idx][0])
 
         # print the first 10 images with their true and predicted label
@@ -201,8 +218,10 @@ def eval_serving_accuracy(n_examples, n_print_examples, request_url,
                      mode=dataset)
             print("Predicted Label: {}".format(mapping[test_img_class_pred]))
 
-    print("Implementation Accuracy on {} test images: {:.2%}".format(
-          n_examples, acc / n_examples))
+    print("Accuracy on {} test images: {:.2%}".format(n_examples,
+                                                      acc / n_examples))
+
+    return durations
 
 
 def get_emnist_mapping():
