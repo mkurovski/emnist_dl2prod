@@ -15,6 +15,7 @@ import logging
 import os
 import pdb
 from pkg_resources import resource_filename
+import shutil
 import time
 
 from flask import (Flask, request, url_for, render_template, abort,
@@ -144,3 +145,8 @@ def classify_img(img_prep):
 
 def main():
     app.run(host="0.0.0.0", port=5000, debug=False)
+    pdb.set_trace()
+    shutil.rmtree(TEMP_MEDIA_FOLDER)
+
+if __name__ == '__main__':
+    main()
