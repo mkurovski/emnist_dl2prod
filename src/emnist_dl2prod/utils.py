@@ -161,8 +161,8 @@ def show_train_progress(iteration, train_loss, test_loss, train_acc, test_acc):
                                                train_acc, test_acc))
 
 
-def eval_serving_accuracy(n_examples, n_print_examples, request_url, seed=42,
-                          dataset='test', use_graphpipe=False):
+def eval_serving_performance(n_examples, n_print_examples, request_url, seed=42,
+                             dataset='test', use_graphpipe=False):
     """
     Fires queries against a model service, evaluates the result in terms
     of classification accuracy and processing time, and prints examples

@@ -21,8 +21,6 @@ import time
 from flask import (Flask, request, url_for, render_template, abort,
                    send_from_directory)
 import numpy as np
-import onnx
-from onnx_tf.backend import prepare
 from skimage.io import imread
 
 from emnist_dl2prod.models import Model
@@ -32,12 +30,6 @@ from emnist_dl2prod.utils import get_emnist_mapping, setup_logging
 dnn_classifier_tf_module = 'emnist_dl2prod.resources.models.dnn_classifier_tf'
 dnn_classifier_tf_resource = resource_filename(dnn_classifier_tf_module, '')
 dnn_classifier_tf = Model(dnn_classifier_tf_resource)
-
-dnn_classifier_onnx_module = 'emnist_dl2prod.resources.models.dnn_classifier_onnx'
-dnn_classifier_onnx_resource = resource_filename(dnn_classifier_onnx_module,
-                                                 'dnn_model_pt.onnx')
-dnn_classifier_onnx = onnx.load(dnn_classifier_onnx_resource)
-dnn_classifier_onnx = prepare(dnn_classifier_onnx)
 
 _logger = logging.getLogger(__name__)
 setup_logging(logging.INFO)
@@ -57,26 +49,29 @@ def upload_file():
 
 
 @app.route('/emnist/result', methods=['POST'])
-def show_emnist_result():
+def process_img_upload():
     """
-    Handles HTTP request by classifying the image
+    Handles HTTP request by checking, saving and classifying the image
     that is provided as part of the request.
+
+    Returns:
+        method call to `show_emnist_success` that calls to render our results'
+        template with the request result
     """
     emnist_result = {}
-    timestamp = int(time.time()*1000)
-    emnist_result['timestamp'] = timestamp
+    request_timestamp = int(time.time()*1000)
+    emnist_result['timestamp'] = request_timestamp
+
+    img_file = request.files['image']
+    if '.png' not in img_file.filename:
+        abort(415, "No .png-file provided")
 
     # In order to display the uploaded image on the results' page,
     # we have to temporarily store it
     # No secure_filename required as we create a new filename
-    img_file = request.files['image']
-    img_filename = 'img_upload_' + str(timestamp) + '.png'
+    img_filename = 'img_upload_' + str(request_timestamp) + '.png'
     img_filepath = os.path.join(app.config['UPLOAD_FOLDER'], img_filename)
     img_file.save(img_filepath)
-
-    if '.png' not in img_file.filename:
-        abort(415, "No .png-file provided")
-
     emnist_result['img_filename'] = url_for('get_file', filename=img_filename)
 
     img_raw = imread(img_file)
@@ -87,7 +82,7 @@ def show_emnist_result():
                                                list(np.round(softmax_scores, 4))))
     emnist_result['predicted_class'] = class_prediction
 
-    return show_emnist_success(emnist_result)
+    return show_emnist_result(emnist_result)
 
 
 @app.route('/emnist/img_upload/<path:filename>')
@@ -97,7 +92,7 @@ def get_file(filename):
 
 
 @app.route('/', methods=['POST'])
-def emnist_service():
+def get_emnist_result():
     """
     EMNIST Detection Webservice without rendering any HTML pages
 
@@ -105,7 +100,6 @@ def emnist_service():
         response (`obj:flask.wrappers.Response`): Response object that contains
             the softmax distribution in JSON
     """
-
     img_prep = json.loads(request.data)['instances']
     softmax_scores = dnn_classifier_tf.run(img_prep).tolist()
     result = {'predictions': softmax_scores}
@@ -119,7 +113,7 @@ def emnist_service():
     return response
 
 
-def show_emnist_success(emnist_result):
+def show_emnist_result(emnist_result):
     """
     Handles a successful image detection
     and returns the render_template for Flask
