@@ -126,6 +126,27 @@ def download_emnist(emnist_folder_path):
     shutil.rmtree(matlab_folder_path)
 
 
+def get_emnist_mapping():
+    """
+    Create Mapping for 62 classes from ASCII code to digit or character
+
+    Returns:
+        mapping (dict): maps ASCII integer to digit / character string
+    """
+    ascii_digits = list(range(48, 58))
+    ascii_uppercase_letters = list(range(65, 65+26))
+    ascii_lowercase_letters = list(range(97, 97+26))
+
+    digits = [chr(value) for value in ascii_digits]
+    uppercase_letters = [chr(value) for value in ascii_uppercase_letters]
+    lowercase_letters = [chr(value) for value in ascii_lowercase_letters]
+
+    mapping = dict(zip(range(10+2*26),
+                       digits+uppercase_letters+lowercase_letters))
+
+    return mapping
+
+
 def show_img(idx, x_train, y_train, x_test, y_test, mapping, mode='train'):
     """
     Shows the selected EMNIST image and its label
@@ -162,24 +183,26 @@ def show_train_progress(iteration, train_loss, test_loss, train_acc, test_acc):
 
 
 def eval_serving_performance(n_examples, n_print_examples, request_url, seed=42,
-                             dataset='test', use_graphpipe=False):
+                             dataset='test', use_graphpipe=False,
+                             emnist_folder_path='emnist_data/'):
     """
     Fires queries against a model service, evaluates the result in terms
     of classification accuracy and processing time, and prints examples
 
     Args:
-        n_examples (int): number of examples to pick and evaluate
+        n_examples (int): number of queries
         n_print_examples (int): number of examples to print img and classification
         request_url (str): URL of model service used for classification
         seed (int): seed for NumPy random number generator
         dataset (str): `train` or `test` data to pick evaluation examples from
         use_graphpipe (bool): use graphpipe client to execute queries (uses
                                 flatbuffers instead)
+        emnist_folder_path (str): folder containing EMNIST data
 
     Returns:
         durations ([int]): list of ms every request took
     """
-    x_train, y_train, x_test, y_test, _ = load_emnist('emnist_data/')
+    x_train, y_train, x_test, y_test, _ = load_emnist(emnist_folder_path)
     mapping = get_emnist_mapping()
 
     acc = 0
@@ -200,7 +223,7 @@ def eval_serving_performance(n_examples, n_print_examples, request_url, seed=42,
 
         if not use_graphpipe:
             start = time.time()
-            test_img_payload = {"instances": test_img_flatten.tolist()}
+            test_img_payload = {'instances': test_img_flatten.tolist()}
             test_img_payload = json.dumps(test_img_payload)
             test_img_softmax_pred = requests.post(request_url,
                                                   data=test_img_payload)
@@ -225,22 +248,62 @@ def eval_serving_performance(n_examples, n_print_examples, request_url, seed=42,
     return durations
 
 
-def get_emnist_mapping():
+def eval_throughput(duration, request_url, batch_size=1, dataset='test',
+                    use_graphpipe=False, emnist_folder_path='emnist_data/'):
     """
-    Create Mapping for 62 classes from ASCII code to digit or character
+    Performs a Throughput test running sequential queries against webservice
+    counting the number of requests performed within duration
+
+    Args:
+        duration (int): number of seconds for running test queries
+        request_url (str): URL of model service used for classification
+        batch_size (int): no. of examples per batch
+        dataset (str): `train` or `test` data to pick evaluation examples from
+        use_graphpipe (bool): use graphpipe client to execute queries (uses
+                                flatbuffers instead)
+        emnist_folder_path (str): folder containing EMNIST data
 
     Returns:
-        mapping (dict): maps ASCII integer to digit / character string
+        num_reqs (int): total number of requests performed
+        reqs_per_second (float): thoughput as the number of requests performed
+                                 per second
+
     """
-    ascii_digits = list(range(48, 58))
-    ascii_uppercase_letters = list(range(65, 65+26))
-    ascii_lowercase_letters = list(range(97, 97+26))
+    x_train, _, x_test, _, _ = load_emnist(emnist_folder_path)
+    if dataset == 'train':
+        data = x_train
+    else:
+        data = x_test
+    data = data.reshape(-1, 1, 28 * 28) / 255
 
-    digits = [chr(value) for value in ascii_digits]
-    uppercase_letters = [chr(value) for value in ascii_uppercase_letters]
-    lowercase_letters = [chr(value) for value in ascii_lowercase_letters]
+    num_reqs = 0
+    _logger.info("Throughput Evaluation on URL {} for {} seconds ...".format(
+            request_url, duration
+    ))
 
-    mapping = dict(zip(range(10+2*26),
-                       digits+uppercase_letters+lowercase_letters))
+    if not use_graphpipe:
+        end_time = time.time() + duration
+        while time.time() <= end_time:
+            batch = data[num_reqs:(num_reqs+batch_size)].reshape(-1, 28*28)
+            test_img_payload = \
+                {"instances": batch.tolist()}
+            test_img_payload = json.dumps(test_img_payload)
+            test_img_softmax_pred = requests.post(request_url,
+                                                  data=test_img_payload)
+            test_img_softmax_pred.json()['predictions']
+            num_reqs += batch_size
+    else:
+        end_time = time.time() + duration
+        while time.time() <= end_time:
+            remote.execute(request_url, data[num_reqs:(num_reqs+batch_size)])
+            num_reqs += batch_size
 
-    return mapping
+    reqs_per_second = num_reqs / duration
+
+    _logger.info(("Throughput Summary:\nURL: {}\nDuration: {} [s]\n"
+                  + "Total Requests: {}\nRequests/Second: {:.2f}").format(
+            request_url, duration, num_reqs, reqs_per_second
+    ))
+
+    return num_reqs, reqs_per_second
+

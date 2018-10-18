@@ -2,7 +2,7 @@
 Flask Webserver module that sets up a simple Webserver
 to handle Prediction Requests
 
-Run with `emist_webservice` that is available as a command
+Run with `emnist-webservice` that is available as a command
 when `emnist_dl2prod` was installed
 
 Alternatively use `FLASK_APP=emnist_webserver.py flask run`
@@ -97,10 +97,10 @@ def get_emnist_result():
     EMNIST Detection Webservice without rendering any HTML pages
 
     Returns:
-        response (`obj:flask.wrappers.Response`): Response object that contains
+        response (:obj:`flask.wrappers.Response`): Response object that contains
             the softmax distribution in JSON
     """
-    img_prep = json.loads(request.data)['instances']
+    img_prep = json.loads(request.data.decode('utf-8'))['instances']
     softmax_scores = dnn_classifier_tf.run(img_prep).tolist()
     result = {'predictions': softmax_scores}
 

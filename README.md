@@ -6,7 +6,7 @@ This repository contains the sourcecode related to my blogpost [series on Medium
 
 1. Clone the repository and change to the folder
 2. If you are using `conda`, just create a new environment from  `env.yml` with `conda env create -f env.yml`. This will create the environment `emnist_dl`.
-3. Activate the enbironment with `conda activate emnist_dl`
+3. Activate the environment with `conda activate emnist_dl`
 3. Install the package with `python setup.py install`
 4. Work through the JuPyter notebooks provided in `notebooks/`
 
@@ -22,7 +22,9 @@ Part 1:
 
 Part 2:
 
-will be publiched on September 18th 
+* [`4_production_TFServing.ipynb`](https://github.com/squall-1002/emnist_dl2prod/blob/master/notebooks/4_production_TFServing.ipynb)
+* [`5_production_Webserver.ipynb`](https://github.com/squall-1002/emnist_dl2prod/blob/master/notebooks/5_production_Webserver.ipynb)
+* [`6_conclusion_Serving_Performance_Comparison.ipynb`](https://github.com/squall-1002/emnist_dl2prod/blob/master/notebooks/6_conclusion_Serving_Performance_Comparison.ipynb)
 
 The code has been tested with Docker `Version 18.06.1-ce-mac73 (26764)`
 

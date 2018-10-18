@@ -23,7 +23,6 @@
 
     <p align=center>Detected Class:</p>
     <p style="text-align:center;font-size:80px;color:darkblue">{{ predicted_class }}</p>
-    <p align=center>Softmax Activations:</p>
     {% for key, value in softmax_scores.items() %}
         {% if key == predicted_class %}
             <p align=center><b>{{  key  }}: {{ value }}</b></p>
