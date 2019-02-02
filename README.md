@@ -12,15 +12,15 @@ This repository contains the sourcecode related to my blogpost [series on Medium
 
 ## JuPyter Notebooks
 
-I will provide five JuPyter notebooks for guidance through the code. I advise you to set everything up and start reading each blogpost and go trough the referenced notebooks to try things out yourself.
+I provide six JuPyter notebooks to guide through the code. I advise you to set everything up, read each blogpost and go trough the referenced notebooks to try things out yourself.
 
-Part 1:
+[Part 1](https://towardsdatascience.com/from-exploration-to-production-bridging-the-deployment-gap-for-deep-learning-8b59a5e1c819):
 
 * [`1_exploration_data_EMNIST.ipynb`](https://github.com/squall-1002/emnist_dl2prod/blob/master/notebooks/1_exploration_data_EMNIST.ipynb)
 * [`2_exploration_model.ipynb`](https://github.com/squall-1002/emnist_dl2prod/blob/master/notebooks/2_exploration_model.ipynb)
 * [`3_translation_ONNX_GraphPipe.ipynb`](https://github.com/squall-1002/emnist_dl2prod/blob/master/notebooks/3_translation_ONNX_GraphPipe.ipynb)
 
-Part 2:
+[Part 2:](https://towardsdatascience.com/from-exploration-to-production-bridging-the-deployment-gap-for-deep-learning-part-2-9e33cc8dfe5e)
 
 * [`4_production_TFServing.ipynb`](https://github.com/squall-1002/emnist_dl2prod/blob/master/notebooks/4_production_TFServing.ipynb)
 * [`5_production_Webserver.ipynb`](https://github.com/squall-1002/emnist_dl2prod/blob/master/notebooks/5_production_Webserver.ipynb)
