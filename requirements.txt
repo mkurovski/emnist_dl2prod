@@ -4,20 +4,20 @@
 
 Flask==1.0.2
 gunicorn==19.9.0
-ipython==6.5.0
+ipython==7.5.0
 jupyter==1.0.0
-matplotlib==2.2.2
-notebook==5.7.4
-numpy==1.15.0
-onnx=1.1.2
+matplotlib==3.0.3
+notebook==5.7.8
+numpy==1.16.3
+onnx=1.5.0
 onnx-tf==1.1.2
-pandas==0.23.3
+pandas==0.24.2
 requests==2.21.0
-scikit-image==0.14.0
-scipy==1.1.0
+scikit-image==0.15.0
+scipy==1.2.1
 tensorflow==1.9.0
-torch==0.4.1
-torchvision==0.2.1
+torch==1.1.0
+torchvision==0.2.2
 
 
 
